@@ -19,7 +19,7 @@
   (def DictVector 
 	(clojure.string/split
 	  (clojure.string/replace							;replace all the 2s with 0s --OPTIONAL
-	    (slurp "dict.txt")
+	    (slurp "resources/dict.txt")
 	  #"2" "0")
 	#"\n"
 	)
@@ -138,7 +138,7 @@
 			(fn [x] (= (clojure.string/upper-case sp) (nth x 0)))				;this function compares sp with the 0 element in the vectors returned by SpellingA, that is to say, the spelling
 			(map SpellingA EveryIndex)			;gives us a list of every spelling	(SpellingA returns a vector where 0 is the spelling and 1 is the index)
 		)
-	0) 1)
+	0 nil) 1)
 )
 
 	(defn IndexToPronunciationVector [x]
@@ -273,6 +273,23 @@
 					(FindWordIndex x)
 				) 0)
 			)
+		)
+	)
+
+;STUFF FOR FAKING GRAMMAR
+	(def NaturalEnglish 
+		(remove clojure.string/blank?
+			(clojure.string/split
+				(slurp "resources/afewpages.txt")
+				#"[^a-zA-Z]"
+			)
+		)
+	)
+	;do a map with FindWordIndex
+
+	(def NaturalEnglishIndexNumbers
+		(remove nil?
+			(map FindWordIndex NaturalEnglish)
 		)
 	)
 
