@@ -1,4 +1,8 @@
 (ns language.core
+	(:require [clojure.string]
+			  [lamina.core :refer :all]
+			  [aleph.http :refer :all]
+			  [ring.middleware.params :refer :all])
   (:gen-class))
 
 (defn -main
@@ -8,14 +12,10 @@
   
   ;to run this, start command, go to c:\language and type lein repl, then when the repl starts type (-main)
 
-;PROGRAM STUFF
-  
-  ;makes it so that you can use string-manipulation functions
-  (require 'clojure.string)
-  
 ;GENERAL ALL-PURPOSE LANGUAGE MACHINERY
   
   ;creates a vector called DictVector which has each line in cmudict separately
+  (println "slurping dict.txt...")
   (def DictVector 
 	(clojure.string/split
 	  (clojure.string/replace							;replace all the 2s with 0s --OPTIONAL
@@ -276,6 +276,21 @@
 		)
 	)
 
+	;takes the spelling of a word and spits out the pronunciation.  For human use.
+	(defn Pronounce [x]
+		(Pronunciation
+			(FindWordIndex x)
+		)
+	)
+
+	;takes the spelling of a word and spits out the syllables.  For human use.
+	(defn Syllables [x]
+		(Emphases
+			(FindWordIndex x)
+		)
+	)
+
+(println "doing natural english stuff...")
 ;STUFF FOR FAKING GRAMMAR
 	(def NaturalEnglish 
 		(remove clojure.string/blank?
@@ -312,8 +327,79 @@
 	)
 	
 
+;WEB SERVER STUFF
+
+(defn DoRequest [input]
 	
-	
+(println "DoRequest function is called")
+
+	(def allFunctions
+		{
+			"rhyme", RhymesWith
+			"pun", Pun
+			"rhymeswith", RhymesWith
+			"pronounce", Pronounce
+			"syllables", Syllables
+		}
+	)
+
+;get path
+	(def functionToDo 
+		(nth (nth 
+			(re-seq #"\/(\w+)"
+				(input :uri)
+			)
+		0) 1)
+	)
+		(println "Browser asked for: " functionToDo)
+
+	(when (contains? allFunctions functionToDo)
+
+		(def word
+			(nth (nth
+				(re-seq #"\/(\w+)"
+					(input :uri)
+				)
+			1) 1)
+		)
+
+		(println "Doing" functionToDo "on" word)
+
+	;	(def word
+	;		(some-> (re-seq #"\/(\w+)" (input :uri))
+	;			(nth 1)
+	;			(nth 1)
+	;		)
+	;	)
+
+
+		(vec ((get allFunctions functionToDo) word))
+
+	)
+
+
+)
+
+(defn rhyme-server [channel request]
+  (enqueue channel
+    {:status 200
+     :headers {"content-type" "text/html"}
+     :body (str 
+     	(DoRequest request)
+     	)
+     }))
+
+
+
+(def app 
+	(wrap-params rhyme-server))
+
+
+(defn StartServer [x]
+	(println "Starting server.")
+	(start-http-server rhyme-server {:port 8008})
+)
+
 	
 ;end of -main  
 )
