@@ -1,5 +1,6 @@
 (ns language.core
 	(:require [clojure.string]
+			  [clojure.math.numeric-tower :as math]
 			  [lamina.core :refer :all]
 			  [aleph.http :refer :all]
 			  [ring.middleware.params :refer :all])
@@ -89,6 +90,15 @@
 			)
 		x]
 	)
+
+	;input an index number, outputs a map like {:spelling index}
+	(defn IndexToSpelling [x]
+		{
+			(keyword
+				(Spelling x)
+			)
+		x}
+	)
 	
   ;makes a list containing all the indeces for DictVector, so they can be doseqed through
   (def EveryIndex (range (count DictVector)))
@@ -101,7 +111,11 @@
 		(map IndexToRhymeKeyword EveryIndex)			;big list of [:rhyme wordindex]
 	)
 	
-	
+	;hash-map with unique words as keys and pronunciation numbers as values, like {:GHOST 47165, etc}
+	(println "Making dictionary hash map...")
+	(def SpellingToIndex
+		(reduce merge (map IndexToSpelling EveryIndex))
+	)
 
 	
   ;get all the unique :emphases keys
@@ -139,6 +153,12 @@
 			(map SpellingA EveryIndex)			;gives us a list of every spelling	(SpellingA returns a vector where 0 is the spelling and 1 is the index)
 		)
 	0 nil) 1)
+)
+
+(defn FindWordIndexA [sp]
+	(SpellingToIndex 
+		(keyword (clojure.string/upper-case sp))
+	)
 )
 
 	(defn IndexToPronunciationVector [x]
@@ -252,7 +272,177 @@
 			(PhonemeLength x, -1)
 		)
 	)
-	
+
+(println "doing natural english stuff...")
+(println "slurping...")
+;STUFF FOR FAKING GRAMMAR
+	(defn NaturalEnglish [text]
+		(remove clojure.string/blank?
+			(clojure.string/split
+				(slurp text)
+				#"[^a-zA-Z]"
+			)
+		)
+	)
+
+(println "converting to index numbers")
+	(def NaturalEnglishIndexNumbers
+		(into []
+			(remove nil?
+				(map FindWordIndexA (NaturalEnglish "resources/pg98.txt"))
+			)
+		)
+	)
+
+(print "Making list of distinct keys")
+	(defn distinctLinkedKeys [l]
+		(distinct
+			(map first l)
+		)
+	)
+
+	(defn findInLinked [x, l]				;this goes through linked
+		(flatten
+			(map rest
+				(filter 						;and returns whatever entries
+					(fn [y] 					;have a 0th element equal to the term
+						(= 						; that you put in
+							(nth y 0)
+							x
+						)
+					)
+					l
+				)
+			)
+		)
+	)
+
+;instead of creating them, I can slurp the serialized data straight, like this:
+
+(def bigList
+	(read-string
+		(slurp "resources/ttc/biglist.txt")
+	)
+)
+(def bigList2
+	(read-string
+		(slurp "resources/ttc/biglist2.txt")
+	)
+)
+(def bigList3
+	(read-string
+		(slurp "resources/ttc/biglist3.txt")
+	)
+)
+
+
+(defn CreateBigLists [x]
+
+	(println "Linking to next word")
+		(def linked
+			(map
+				(fn [a, b] [(keyword (str a)), b])
+				NaturalEnglishIndexNumbers
+				(rest NaturalEnglishIndexNumbers)
+			)
+		)
+
+	(print "Making big list")
+	(def bigList
+		(reduce merge
+			(map  										;this will go through each distinct key in the linked vector, they'll be called inDLK
+				(fn [inDLK, i]
+					(when (= 
+						(/ i 100)
+						(math/floor (/ i 100))
+						)
+						(print ".")
+					)
+					{
+						inDLK
+						(findInLinked inDLK linked)
+					}
+				)
+				(distinctLinkedKeys linked)
+				(range)
+			)
+		)
+	)
+	(println "")
+
+	(println "Linking to next word 2")
+		(def linked2
+			(map
+				(fn [a, b] [(keyword (str a)), b])
+				NaturalEnglishIndexNumbers
+				(rest (rest NaturalEnglishIndexNumbers))
+			)
+		)
+
+	(print "Making big list 2")
+	(def bigList2
+		(reduce merge
+			(map  										;this will go through each distinct key in the linked vector, they'll be called inDLK
+				(fn [inDLK, i]
+					(when (= 
+						(/ i 100)
+						(math/floor (/ i 100))
+						)
+						(print ".")
+					)
+					{
+						inDLK
+						(findInLinked inDLK linked2)
+					}
+				)
+				(distinctLinkedKeys linked2)
+				(range)
+			)
+		)
+	)
+	(println "")
+
+	(println "Linking to next word 3")
+		(def linked3
+			(map
+				(fn [a, b] [(keyword (str a)), b])
+				NaturalEnglishIndexNumbers
+				(rest (rest (rest NaturalEnglishIndexNumbers)))
+			)
+		)
+
+	(print "Making big list 3")
+	(def bigList3
+		(reduce merge
+			(map  										;this will go through each distinct key in the linked vector, they'll be called inDLK
+				(fn [inDLK, i]
+					(when (= 
+						(/ i 100)
+						(math/floor (/ i 100))
+						)
+						(print ".")
+					)
+					{
+						inDLK
+						(findInLinked inDLK linked3)
+					}
+				)
+				(distinctLinkedKeys linked3)
+				(range)
+			)
+		)
+	)
+	(println "")
+
+)
+
+(def distinctN
+	(distinct NaturalEnglishIndexNumbers)
+)
+
+(println "Done with natural english stuff")
+
+;FUNCTIONS FOR HUMAN USE, OR TO BE SERVED
 	;Takes the spelling of a word and spits out puns.  For human use.
 	(defn Pun [x]
 		(map Spelling 
@@ -290,23 +480,98 @@
 		)
 	)
 
-(println "doing natural english stuff...")
-;STUFF FOR FAKING GRAMMAR
-	(def NaturalEnglish 
-		(remove clojure.string/blank?
-			(clojure.string/split
-				(slurp "resources/afewpages.txt")
-				#"[^a-zA-Z]"
+	;takes the spelling of a word and spits out a list of words that come next in the text.  For human use.
+	(defn GetNextWord [x]
+		(map Spelling 
+			(get bigList
+				(keyword (str
+					(FindWordIndexA x)
+				))
 			)
 		)
 	)
-	;do a map with FindWordIndex
 
-	(def NaturalEnglishIndexNumbers
-		(remove nil?
-			(map FindWordIndex NaturalEnglish)
+	(defn GetNextWord2 [x]
+		(map Spelling 
+			(get bigList2
+				(keyword (str
+					(FindWordIndexA x)
+				))
+			)
 		)
 	)
+
+	(defn GetNextWord3 [x]
+		(map Spelling 
+			(get bigList3
+				(keyword (str
+					(FindWordIndexA x)
+				))
+			)
+		)
+	)
+
+;x should be [it was]
+	(defn GetNextWord12And [x]
+		(let [word1 (nth x 1)
+		 	  word2 (nth x 0)]
+
+			(filter 
+				(set (GetNextWord2 word2))				;set gives us an unordered unique set, like a hash but with no values, AND
+				(GetNextWord word1)						;clojure treats the any set as a function, and the function is to take whatever input is being passed to the
+			)											;function, in this case what the filter is passing in, and see if it exists in the set
+		)
+	)
+
+	(defn GetNextWord123And [x]
+		(let [word1 (nth x 2)
+		 	  word2 (nth x 1)
+		 	  word3 (nth x 0)]
+
+			(filter 
+				(set 
+					(filter 
+						(set (GetNextWord3 word3))
+						(GetNextWord2 word2)
+					)
+				)	
+				(GetNextWord word1)
+			)
+		)
+	)
+
+;OTHER USEFUL FUNCTIONS
+	;returns not a list, but a single randomly chosen next word
+	(defn GetRandomNextWord [x]
+		(rand-nth (GetNextWord x))
+	)
+
+	(defn GetRandomNextWord2 [x]
+		(let [word1 (nth x 1)
+		 	  word2 (nth x 0)]
+
+		 	[word1
+		 	(rand-nth 
+		 		(GetNextWord12And [word2 word1])
+		 	)
+		 	]
+		)
+	)
+
+	(defn GetRandomNextWord3 [x]
+		(let [word1 (nth x 2)
+		 	  word2 (nth x 1)
+		 	  word3 (nth x 0)]
+
+		 	[word2 word1
+		 	(rand-nth
+		 		(GetNextWord123And [word3 word2 word1])
+		 	)
+		 	]
+
+		)
+	)
+
 
 ;ACTUAL PROGRAM STRUCTURE
 
@@ -325,6 +590,28 @@
 	(defn AddWord [x y]
 		(into [] (flatten (concat [x] [y])))
 	)
+
+	(def blankSentence
+		(range 12)
+	)
+
+	(defn sentence [firstword]
+		(vec
+			(take 12
+				(iterate GetRandomNextWord firstword)
+			)
+		)
+	)
+
+	(defn sentence3 [first3words]
+		(map (fn [x] (nth x 2))
+		(vec
+			(take 20
+				(iterate GetRandomNextWord3 first3words)
+			)
+		)
+		)
+	)
 	
 
 ;WEB SERVER STUFF
@@ -340,6 +627,7 @@
 			"rhymeswith", RhymesWith
 			"pronounce", Pronounce
 			"syllables", Syllables
+			"nextword", GetNextWord
 		}
 	)
 
@@ -400,6 +688,7 @@
 	(start-http-server rhyme-server {:port 8008})
 )
 
-	
+;(StartServer 8008)
+
 ;end of -main  
 )
