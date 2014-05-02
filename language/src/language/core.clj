@@ -280,7 +280,7 @@
 		(remove clojure.string/blank?
 			(clojure.string/split
 				(slurp text)
-				#"[^a-zA-Z]"
+				#"[^a-zA-Z']"
 			)
 		)
 	)
@@ -480,6 +480,86 @@
 		)
 	)
 
+	;same as syllables but javascript friendly OR NOT
+	(defn Syllables2 [x]
+		(clojure.string/join ", "
+			(Emphases
+				(FindWordIndex x)
+			)
+		)
+	)
+
+	(defn TextAsPhonemes [x]
+		(flatten
+			(map 
+				(fn [x] (clojure.string/split x #" "))
+				(map Pronunciation x)
+			)
+		)
+	)
+
+	(def DistinctPhonemes
+		(distinct (TextAsPhonemes NaturalEnglishIndexNumbers))
+	)
+
+	(def NatPhon
+		(TextAsPhonemes NaturalEnglishIndexNumbers)
+	)
+
+	(def NatPhon2 (into [] NatPhon))
+
+	(defn IndividualPhonemeFrequency [x]
+		(count
+			(filter
+				(fn [y] (= x y))
+				NatPhon
+			)
+		)
+	)
+
+	(defn IndividualPhonemeFrequency2 [x]
+		{x
+			(count
+				(filter
+					(fn [y] (= x y))
+					NatPhon
+				)
+			)
+		}
+	)
+
+	;vector of all sets of two phonemes in a row, in order, from natural english input
+	(def SetOf2NatPhon
+		(map
+			(fn [x]
+				(str
+					(nth NatPhon2 x)
+					" "
+					(nth NatPhon2 (+ x 1))
+				)
+			)
+			(range(- (count NatPhon2) 1))
+		)
+	)
+
+	(defn TwoPhonemeFrequency2 [x]
+		{x
+			(count
+				(filter
+					(fn [y] (= x y))
+					SetOf2NatPhon
+				)
+			)
+		}
+	)
+
+	(def DistinctSetsOf2
+		(distinct SetOf2NatPhon)
+	)
+
+	(def ByTwos (sort-by second (map TwoPhonemeFrequency2 DistinctSetsOf2)))
+
+
 	;takes the spelling of a word and spits out a list of words that come next in the text.  For human use.
 	(defn GetNextWord [x]
 		(map Spelling 
@@ -571,7 +651,95 @@
 
 		)
 	)
+;STUFF FOR METRICAL ANALYSIS
 
+	(defn SplitWords [x]
+		(remove clojure.string/blank?
+			(clojure.string/split
+				x
+				#"[^a-zA-Z]"
+			)
+		)
+	)
+
+	(defn AsMetrical [x]
+		(flatten
+			(map Emphases
+				(filter (fn [x] (not= nil x))
+					(map FindWordIndexA
+						(SplitWords x)
+					)
+				)
+			)
+		)
+	)
+
+	(defn ByTwos [x]
+		(map
+			(fn [y]
+				(str
+					(nth x y)
+					" "
+					(nth x (+ y 1))
+				)
+			)
+			(range (- (count x) 1))
+		)
+	)
+
+	(defn isIamb? [x]
+		(= x "0 1")
+	)
+	(defn isPyrrhus? [x]
+		(= x "0 0")
+	)
+	(defn isTrochee? [x]
+		(= x "1 0")
+	)
+	(defn isSpondee? [x]
+		(= x "1 1")
+	)
+
+	(defn howManyIambs [x]
+		(count
+			(filter (fn [x] x)
+				(map
+					isIamb?
+					(ByTwos (AsMetrical x))
+				)
+			)
+		)
+	)
+	(defn howManyPyrrhuses [x]
+		(count
+			(filter (fn [x] x)
+				(map
+					isPyrrhus?
+					(ByTwos (AsMetrical x))
+				)
+			)
+		)
+	)
+	(defn howManyTrochees [x]
+		(count
+			(filter (fn [x] x)
+				(map
+					isTrochee?
+					(ByTwos (AsMetrical x))
+				)
+			)
+		)
+	)
+	(defn howManySpondees [x]
+		(count
+			(filter (fn [x] x)
+				(map
+					isSpondee?
+					(ByTwos (AsMetrical x))
+				)
+			)
+		)
+	)
 
 ;ACTUAL PROGRAM STRUCTURE
 
@@ -669,9 +837,13 @@
 )
 
 (defn rhyme-server [channel request]
+
+
+
   (enqueue channel
     {:status 200
-     :headers {"content-type" "text/html"}
+     :headers {"content-type" "text/plain"
+ 				"Access-Control-Allow-Origin" "*"}
      :body (str 
      	(DoRequest request)
      	)
@@ -685,7 +857,7 @@
 
 (defn StartServer [x]
 	(println "Starting server.")
-	(start-http-server rhyme-server {:port 8008})
+	(start-http-server rhyme-server {:port x})
 )
 
 ;(StartServer 8008)
