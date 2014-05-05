@@ -687,6 +687,21 @@
 		)
 	)
 
+	(defn ByThrees [x]
+		(map
+			(fn [y]
+				(str
+					(nth x y)
+					" "
+					(nth x (+ y 1))
+					" "
+					(nth x (+ y 2))
+				)
+			)
+			(range (- (count x) 2))
+		)
+	)
+
 	(defn isIamb? [x]
 		(= x "0 1")
 	)
@@ -700,6 +715,31 @@
 		(= x "1 1")
 	)
 
+	(defn isTribrach? [x]
+		(= x "0 0 0")
+	)
+	(defn isDactyl? [x]
+		(= x "1 0 0")
+	)
+	(defn isAmphibrach? [x]
+		(= x "0 1 0")
+	)
+	(defn isAnapaest? [x]
+		(= x "0 0 1")
+	)
+	(defn isBacchius? [x]
+		(= x "0 1 1")
+	)
+	(defn isAntibacchius? [x]
+		(= x "1 1 0")
+	)
+	(defn isCretic? [x]
+		(= x "1 0 1")
+	)
+	(defn isMolossus? [x]
+		(= x "1 1 1")
+	)
+
 	(defn howManyIambs [x]
 		(count
 			(filter (fn [x] x)
@@ -710,7 +750,7 @@
 			)
 		)
 	)
-	(defn howManyPyrrhuses [x]
+	(defn howManyPyrrhus [x]
 		(count
 			(filter (fn [x] x)
 				(map
@@ -739,6 +779,110 @@
 				)
 			)
 		)
+	)
+
+	(defn howManyTribrachs [x]
+		(count
+			(filter (fn [x] x)
+				(map
+					isTribrach?
+					(ByThrees (AsMetrical x))
+				)
+			)
+		)
+	)
+
+	(defn howManyDactyls [x]
+		(count
+			(filter (fn [x] x)
+				(map
+					isDactyl?
+					(ByThrees (AsMetrical x))
+				)
+			)
+		)
+	)
+
+	(defn howManyAmphibrachs [x]
+		(count
+			(filter (fn [x] x)
+				(map
+					isAmphibrach?
+					(ByThrees (AsMetrical x))
+				)
+			)
+		)
+	)
+
+	(defn howManyAnapaests [x]
+		(count
+			(filter (fn [x] x)
+				(map
+					isAnapaest?
+					(ByThrees (AsMetrical x))
+				)
+			)
+		)
+	)
+
+	(defn howManyBacchius [x]
+		(count
+			(filter (fn [x] x)
+				(map
+					isTribrach?
+					(ByThrees (AsMetrical x))
+				)
+			)
+		)
+	)
+
+	(defn howManyAntibacchius [x]
+		(count
+			(filter (fn [x] x)
+				(map
+					isAntibacchius?
+					(ByThrees (AsMetrical x))
+				)
+			)
+		)
+	)
+
+	(defn howManyCretics [x]
+		(count
+			(filter (fn [x] x)
+				(map
+					isCretic?
+					(ByThrees (AsMetrical x))
+				)
+			)
+		)
+	)
+
+	(defn howManyMolossus [x]
+		(count
+			(filter (fn [x] x)
+				(map
+					isMolossus?
+					(ByThrees (AsMetrical x))
+				)
+			)
+		)
+	)
+
+	(defn AnaylzeMeter [x]
+		{
+			:pyrrhus (howManyPyrrhus x),
+			:iamb (howManyIambs x),
+			:trochee (howManyTrochees x),
+			:spondee (howManySpondees x),
+			:tribrach (howManyTribrachs x),
+			:amphibrach (howManyAmphibrachs x),
+			:anapaest (howManyAnapaests x),
+			:bacchius (howManyBacchius x),
+			:antibacchius (howManyAntibacchius x),
+			:cretic (howManyCretics x),
+			:molossus (howManyMolossus x)
+		}
 	)
 
 ;ACTUAL PROGRAM STRUCTURE

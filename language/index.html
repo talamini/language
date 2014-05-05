@@ -8,36 +8,44 @@
 		<div ng-controller="MeterCtrl">
 			<textarea ng-model="pastedInText" style="height:100px;width:100%;"></textarea>
 			<button ng-click="processPastedInText()">Process</button>
+			Poetry: <input type="checkbox" ng-model="poetry">
+
 			<div style="
 				background-color:lightgray
 				border-width:3px;
 				border-color:black;
 				border-style:solid;
 				padding:10px;">
-				<div 
-				style="
-					background-color:lightblue;
-					border-style:solid;
-					border-width:1.5px;
-					border-color:black;
-					border-radius:25px;
-					display:inline-block;
-					padding:5px 1px;
-					margin:5px 0px;"
-				ng-repeat="wordBubble in wordBubbles">
-					<div style="text-align:center;">{{wordBubble.word}}</div>
-					<div>
-						<div 
-						style="width:45px;
-							height:30px;
-							line-height: 30px;
-							border-radius:30px;
-							border-style:solid;
-							border-color:black;
-							border-width:1px;
-							display:inline-block;
-							text-align:center;"
-						ng-repeat="syllable in wordBubble.syllables track by $index">{{syllable}}</div>
+
+				<div style="
+					border-style:none;
+					padding:0;"
+					ng-repeat="line in Lines">
+
+					<div 
+					style="
+						background-color:lightblue;
+						border-style:solid;
+						border-width:1.5px;
+						border-color:black;
+						border-radius:25px;
+						display:inline-block;
+						padding:5px 1px;"
+					ng-repeat="wordBubble in line | filter : {display: true}">
+						<div style="text-align:center;">{{wordBubble.text}}</div>
+						<div>
+							<div 
+							style="width:45px;
+								height:30px;
+								line-height: 30px;
+								border-radius:30px;
+								border-style:solid;
+								border-color:black;
+								border-width:1px;
+								display:inline-block;
+								text-align:center;"
+							ng-repeat="syllable in wordBubble.syllables track by $index">{{syllable}}</div>
+						</div>
 					</div>
 				</div>
 			</div>
