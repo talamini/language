@@ -129,12 +129,39 @@
 
     	}
 
+    	$scope.toEdit = function(bubble) {
 
-    	//also try this:  Divided into lines, measure how often each line matches a grid of ideal double vs ideal triple meter
-    	//double meter needs to count the highest of either the original grid, or offset by 1
-    	//triple meter needs to count the highest between it and it offest by 1 and then by 2 also
+	    	bubble.editing = true;
+
+	    	console.info(bubble);
+
+    	}
+
+    	$scope.unEdit = function(bubble) {
+
+	    	bubble.editing = false;
+
+	    	console.info(bubble);
+
+    	}
+
+    	$scope.flipSyllable = function(bubble, index) {
+    		if (bubble.syllables[index] == "V") {
+    			bubble.syllables[index] = "^";
+    		} else {
+    			bubble.syllables[index] = "V";
+    		}
+    	}
+
+    	$scope.addSyllable = function(bubble) {
+    		console.info(bubble);
+    		bubble.syllables.push("V");
+    	}
 
     	$scope.processPastedInText = function() {
+
+	    	$scope.wordBubbles = [];
+	    	$scope.Lines = [];
 
     		var linesplit = $scope.pastedInText.split(/\n/);
     		var newlinesreplaced = "";
@@ -143,16 +170,30 @@
     			newlinesreplaced = newlinesreplaced + linesplit[k] + "\\ ";
     		}
 
+    		console.info(newlinesreplaced);
+
+    		newlinesreplaced = newlinesreplaced.replace(/\u2019/, "'");
+
+    		console.info(newlinesreplaced);
+
     		//split on NOT a letter or a single quote
-    		var split = newlinesreplaced.split(/[^a-zA-Z'\?\!\.\,\:\;\\]/m).filter(function(v){return v != ""});
+    		var split = newlinesreplaced.split(/[^a-zA-Z'\?\!\.\,\:\;\\\(\)]/m).filter(function(v){return v != ""});
 
     		var newsplit = [];
 
     		for (var i = 0; i < split.length; i++) {
-    			var psplit = split[i].split(/(?=[\!\,\.\;\:\?\\])/m);
-
+    			console.info(split[i]);
+    			var psplit = split[i].split(/(?=[\!\,\.\;\:\?\\\(\)])/m);
+    			
     			for (var j = 0; j < psplit.length; j++) {
-    				newsplit.push(psplit[j]);
+
+    				if (psplit[j].split(/\b/).length == 2) {
+    					//deal with punctuation prior to a word, mostly like these ---> (
+    					newsplit.push(psplit[j].split(/\b/)[0]);
+    					newsplit.push(psplit[j].split(/\b/)[1]);
+    				} else {
+	    				newsplit.push(psplit[j]);
+	    			}
     			}
     		}
 
@@ -165,11 +206,13 @@
     				v == "." ||
     				v == ";" ||
     				v == ":" ||
-    				v == "?") 
+    				v == "?" ||
+    				v == ")" ||
+    				v == "(") 
     			{
-    				$scope.wordBubbles.push({type: "punctuation", text: v, syllables: "", display: true, linebreak: false})
+    				$scope.wordBubbles.push({type: "punctuation", text: v, syllables: [], display: true, linebreak: false, editing: false})
     			} else {
-	    			$scope.wordBubbles.push({type: "word", text: v, syllables: "", display: true, linebreak: false});
+	    			$scope.wordBubbles.push({type: "word", text: v, syllables: [], display: true, linebreak: false, editing: false});
 	    		}
     		});
 
@@ -182,6 +225,8 @@
     		StartGettingSyllables()
     	};
 
+
+
     	function LineBreak() {
     		$scope.wordBubbles.map(function(v){
     			if ($scope.poetry == false) {
@@ -191,7 +236,9 @@
     					v.text == "." ||
     					v.text == ";" ||
     					v.text == ":" ||
-    					v.text == "?"
+    					v.text == "?" ||
+    					v.text == "(" ||
+    					v.text == ")"
     					) {
     					v.linebreak = true;
     				}

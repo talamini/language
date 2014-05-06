@@ -32,19 +32,35 @@
 						display:inline-block;
 						padding:5px 1px;"
 					ng-repeat="wordBubble in line | filter : {display: true}">
-						<div style="text-align:center;">{{wordBubble.text}}</div>
+						<div ng-click="toEdit(wordBubble)">
+							<div ng-if="!wordBubble.editing">
+								<div style="text-align:center;">{{wordBubble.text}}</div>
+								<div style="margin-left:-2px;margin-right:-2px;">
+									<div 
+									style="width:45px;
+										height:30px;
+										line-height: 30px;
+										border-radius:30px;
+										border-style:solid;
+										border-color:black;
+										border-width:1px;
+										display:inline-block;
+										text-align:center;"
+									ng-repeat="syllable in wordBubble.syllables track by $index">{{syllable}}</div>
+								</div>
+							</div>
+							<div ng-if="!!wordBubble.editing">
+								Word:<input type="text" ng-model="wordBubble.text">
+								<div>
+									<div style="display:inline-block;" ng-repeat="syllable in wordBubble.syllables track by $index">
+										<button style="display:inline-block;" ng-click="flipSyllable(wordBubble, $index)">{{syllable}}</button>
+									</div>
+									<button style="display:inline-block;" ng-click="addSyllable(wordBubble)">add</button>
+								</div>
+							</div>
+						</div>
 						<div>
-							<div 
-							style="width:45px;
-								height:30px;
-								line-height: 30px;
-								border-radius:30px;
-								border-style:solid;
-								border-color:black;
-								border-width:1px;
-								display:inline-block;
-								text-align:center;"
-							ng-repeat="syllable in wordBubble.syllables track by $index">{{syllable}}</div>
+							<button ng-if="wordBubble.editing" ng-click="unEdit(wordBubble)">exit</button>
 						</div>
 					</div>
 				</div>
