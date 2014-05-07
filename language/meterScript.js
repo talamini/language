@@ -4,6 +4,41 @@
     	$scope.Lines = [];
     	$scope.poetry = false;
 
+        var colorList = [
+            "#393b79",
+            "#5254a3",
+            "#6b6ecf",
+            "#9c9ede",
+            "#637939",
+            "#8ca252",
+            "#b5cf6b",
+            "#cedb9c",
+            "#8c6d31",
+            "#bd9e39",
+            "#e7ba52",
+            "#e7cb94",
+            "#843c39",
+            "#ad494a",
+            "#d6616b",
+            "#e7969c",
+            "#7b4173",
+            "#a55194",
+            "#ce6dbd",
+            "#de9ed6",
+            "#1f77b4",
+            "#ff7f0e",
+            "#2ca02c",
+            "#d62728",
+            "#9467bd",
+            "#8c564b",
+            "#e377c2",
+            "#7f7f7f",
+            "#bcbd22",
+            "#17becf"
+        ];
+
+        var rhymeList = [];
+
     	var disyllable = {
     		"0 0": "pyrrhus",
     		"0 1": "iamb",
@@ -24,6 +59,34 @@
     		disyllable: disyllable,
     		trisyllable: trisyllable
     	}
+
+        $scope.analyzeMeter = function() {
+
+            var ideal = CompareToIdeal(CurrentWholeMeter());
+
+            var countAfter = More2Or3(CurrentWholeMeter());
+
+            $scope.idealAnalysis = "Ideal:  Double:  " + ideal.Double + ", Triple:  " + ideal.Triple;
+
+            $scope.countingAnalysis = "Counting:  Double:  " + countAfter.double + ", Triple:  " + countAfter.triple;
+
+            //$scope.idealAnalysis = $scope.idealAnalysis + " -- Other:  Double:  " + d.double + "  Triple:  " + d.triple;
+        }
+
+        function CurrentWholeMeter() {
+            var output = "";
+            $scope.wordBubbles.map(function(x){
+                x.syllables.map(function(y){
+                    if (y == "v") {
+                        output = output + "0";
+                    }
+                    if (y == "^") {
+                        output = output + "1";
+                    }
+                });
+            });
+            return output;
+        }
 
     	function DivideIntoFeet2(syllables) {
     		var tempSyllables = syllables;
@@ -58,7 +121,7 @@
     		var number3 = 0;
     		for (var i = 0; i < syllables.length; i++) {
     			if (syllables.substring(i, i + 1) == "1") {
-    				console.info("1");
+    				//console.info("1");
     				//reset
     				if (howManyNow == 1) {
     					number2++;
@@ -69,7 +132,7 @@
     				howManyNow = 0;
     			}
     			if (syllables.substring(i, i + 1) == "0") {
-    				console.info("0");
+    				//console.info("0");
     				howManyNow++;
     			}
     		}
@@ -145,18 +208,29 @@
 
     	}
 
+        $scope.toAdvanced = function(bubble) {
+            bubble.advanced = true;
+        }
+
+        $scope.unAdvanced = function(bubble) {
+            bubble.advanced = false;
+        }
+
     	$scope.flipSyllable = function(bubble, index) {
-    		if (bubble.syllables[index] == "V") {
+    		if (bubble.syllables[index] == "v") {
     			bubble.syllables[index] = "^";
     		} else {
-    			bubble.syllables[index] = "V";
+    			bubble.syllables[index] = "v";
     		}
     	}
 
     	$scope.addSyllable = function(bubble) {
-    		console.info(bubble);
-    		bubble.syllables.push("V");
+    		bubble.syllables.push("v");
     	}
+
+        $scope.removeSyllable = function(bubble) {
+            bubble.syllables.pop();
+        }
 
     	$scope.processPastedInText = function() {
 
@@ -170,11 +244,7 @@
     			newlinesreplaced = newlinesreplaced + linesplit[k] + "\\ ";
     		}
 
-    		console.info(newlinesreplaced);
-
-    		newlinesreplaced = newlinesreplaced.replace(/\u2019/, "'");
-
-    		console.info(newlinesreplaced);
+    		newlinesreplaced = newlinesreplaced.replace(/\u2019/g, "'");
 
     		//split on NOT a letter or a single quote
     		var split = newlinesreplaced.split(/[^a-zA-Z'\?\!\.\,\:\;\\\(\)]/m).filter(function(v){return v != ""});
@@ -198,6 +268,16 @@
     		}
 
     		newsplit.map(function(v){
+
+                var newBubble = {
+                    styles: {
+                        "background-color": "#A2B8D7"
+                    },
+                    text: v, 
+                    syllables: [], 
+                    display: true, 
+                    linebreak: false, 
+                    editing: false}
     			
     			if (
     				v == "\\" ||
@@ -210,9 +290,12 @@
     				v == ")" ||
     				v == "(") 
     			{
-    				$scope.wordBubbles.push({type: "punctuation", text: v, syllables: [], display: true, linebreak: false, editing: false})
+                    newBubble.type = "punctuation";
+                    newBubble.styles["margin-left"] = "-5px";
+    				$scope.wordBubbles.push(newBubble)
     			} else {
-	    			$scope.wordBubbles.push({type: "word", text: v, syllables: [], display: true, linebreak: false, editing: false});
+                    newBubble.type = "word";
+	    			$scope.wordBubbles.push(newBubble);
 	    		}
     		});
 
@@ -276,7 +359,116 @@
     		$scope.Lines = l;
     	}
 
+        $scope.getInfo = function(infoword) {
+            console.info("I'm here!  It's " + infoword);
 
+            $http({method: 'GET', 
+                    url: 'http://localhost:8008/info/' + infoword,
+                    transformResponse: [function(data){return data;}]
+                    })
+                .success(function(data, status, headers, config){
+                    console.info(data);
+
+                    var results = data.match(/[^[\]]+(?=])/g);
+
+                    console.info("results:");
+
+                    console.info(results);
+                    console.info(results[0]);
+
+                    var syllables = results[0];
+                    //syllables = syllables.match(/[^[\"]+(?=\")/g);
+                    syllables = syllables.split('').filter(function(v){return v == '1' || v == '0'});
+                    console.info(syllables);
+
+                })
+                .error();
+
+        }
+
+        $scope.recalculateRhyme = function(bubble) {
+
+            var rhymeRegex = /(\w\w1[^1]*)$/;
+
+            bubble.rhymekey = rhymeRegex.exec(bubble.pronunciation)[1];
+
+            ProcessRhymes();
+
+        }
+
+        function ProcessRhymes() {
+            $scope.wordBubbles.map(function(x, i){
+
+                var matches = $scope.wordBubbles.filter(function(y){
+                    return x.rhymekey == y.rhymekey 
+                    && x.text.toUpperCase() != y.text.toUpperCase() 
+                    && (!!x.rhymekey)
+                    && (!!y.rhymekey);
+                });
+                if (matches.length > 0) {
+                    rhymeList.push({rhymekey: x.rhymekey});
+                }
+
+            });
+
+            var newRhymeList = [];
+            rhymeList.map(function(x, i){
+                var matches = rhymeList.slice(i).filter(function(y){
+                    return y.rhymekey == x.rhymekey;
+                })
+                if (matches.length == 1) {
+                    newRhymeList.push(x);
+                }
+            });
+
+            console.info("new rhyme list");
+            console.info(newRhymeList);
+
+            rhymeList = newRhymeList;
+
+            //get rid of duplicates
+           /* [{"rhymekey": "foo"} {"rhymekey": "bar"} {"rhymekey": "foo"}]
+                .reduce(function (acc, item) {
+                var arr = acc[item.rhymekey];
+                if (!arr)
+                    arr = [];
+                arr.push(item);
+                acc[item.rhymekey] = arr;
+                return acc;
+            }, {})
+                rhymes = []
+                rhymeObj = {
+                    "foo": [{ryhmekey: "foo"} {rhymekey: "foo"}]
+                    "bar": [{rhymekey: "bar"}]
+                }
+                for (var key in rhymeObj  ) {
+
+                    if (rhmeObj[key].length > 1)
+                        rhymes.push(rymeObj[key])
+                }*/
+
+            rhymeList.map(function(x, i){
+                if (!!colorList[i]) {
+                    x.color = colorList[i];
+                } else {
+                    x.color = "white";
+                }
+
+            });
+
+            console.info(rhymeList);
+
+            $scope.wordBubbles.map(function(x, i){
+
+                rhymeList.map(function(y){
+                    if (y.rhymekey == x.rhymekey) {
+                        x.styles["background-color"] = y.color;
+                    }
+                });
+
+            });
+
+        }
 
 		function StartGettingSyllables() {
 
@@ -290,25 +482,52 @@
 				//console.info(wordsWithoutSyllables[0].word);
 
 				$http({method: 'GET', 
-					url: 'http://localhost:8008/syllables/' + wordsWithoutSyllables[0].text,
+					url: 'http://localhost:8008/info/' + wordsWithoutSyllables[0].text,
 					transformResponse: [function(data){return data;}]
 					}).
 				    success(function(data, status, headers, config) {
 				    	//console.info("Success!");
 				    	//console.info(data);
 
-				    	var parsed = data.split('').filter(function(v){return v == '1' || v == '0'});
-				    	parsed = parsed.map(function(v){
+                        var results = data.match(/[^[\]]+(?=])/g);
+
+                        var syll = results[0];
+                        var pron = results[1];
+                        var syn = results[2];
+                        var rhy = results[3];
+
+                        var regex = /rhymekey\" \"(.*)\"/;
+
+                        if (!!regex.exec(rhy)) {
+                            rhy = regex.exec(rhy)[1];
+                        } else {
+                            rhy = null;
+                        }
+
+                        wordsWithoutSyllables[0].rhymekey = rhy;
+
+                        var preg = /pronounce\" \"(.*)\"/;
+
+                        if (!!preg.exec(pron)) {
+                            pron = preg.exec(pron)[1];
+                        } else {
+                            pron = null;
+                        }
+
+                        wordsWithoutSyllables[0].pronunciation = pron;
+
+				    	syll = syll.split('').filter(function(v){return v == '1' || v == '0'});
+				    	syll = syll.map(function(v){
 
 				    		if (v == "0") {
-				    			return "V";
+				    			return "v";
 				    		}
 				    		if (v == "1") {
 				    			return "^";
 				    		}
-				    	})
+				    	});
 
-				    	wordsWithoutSyllables[0].syllables = parsed;
+				    	wordsWithoutSyllables[0].syllables = syll;
 
 				    	var newWordsWithoutSyllables = $scope.wordBubbles.filter(function(v){
 							return v.syllables == "";
@@ -336,6 +555,9 @@
 
 			} else {
 				console.info("There are no words without syllables");
+
+                ProcessRhymes();
+
 			}
 		}
 

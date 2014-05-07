@@ -9,6 +9,11 @@
 			<textarea ng-model="pastedInText" style="height:100px;width:100%;"></textarea>
 			<button ng-click="processPastedInText()">Process</button>
 			Poetry: <input type="checkbox" ng-model="poetry">
+			<div>
+				<button ng-click="analyzeMeter()">Analyze Meter</button>
+				<div ng-if="!!idealAnalysis">{{idealAnalysis}}</div>
+				<div ng-if="!!countingAnalysis">{{countingAnalysis}}</div>
+			</div>
 
 			<div style="
 				background-color:lightgray
@@ -31,7 +36,8 @@
 						border-radius:25px;
 						display:inline-block;
 						padding:5px 1px;"
-					ng-repeat="wordBubble in line | filter : {display: true}">
+					ng-repeat="wordBubble in line | filter : {display: true}"
+					ng-style="wordBubble.styles">
 						<div ng-click="toEdit(wordBubble)">
 							<div ng-if="!wordBubble.editing">
 								<div style="text-align:center;">{{wordBubble.text}}</div>
@@ -55,12 +61,24 @@
 									<div style="display:inline-block;" ng-repeat="syllable in wordBubble.syllables track by $index">
 										<button style="display:inline-block;" ng-click="flipSyllable(wordBubble, $index)">{{syllable}}</button>
 									</div>
-									<button style="display:inline-block;" ng-click="addSyllable(wordBubble)">add</button>
+									<button style="display:inline-block;" ng-click="removeSyllable(wordBubble)">-</button>
+									<button style="display:inline-block;" ng-click="addSyllable(wordBubble)">+</button>
 								</div>
 							</div>
 						</div>
 						<div>
-							<button ng-if="wordBubble.editing" ng-click="unEdit(wordBubble)">exit</button>
+							<button ng-if="wordBubble.editing" ng-click="unEdit(wordBubble)">close</button>
+							<div ng-if="wordBubble.editing">
+								<button ng-if="!wordBubble.advanced" ng-click="toAdvanced(wordBubble)">advanced</button>
+								<div ng-if="!!wordBubble.advanced">
+									Advanced Menu
+									<div>
+										<input type="text" ng-model="wordBubble.pronunciation">
+										<button ng-click="recalculateRhyme(wordBubble)">Recalculate Rhyme</button>
+									</div>
+									<button ng-click="unAdvanced(wordBubble)">close</button>
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>

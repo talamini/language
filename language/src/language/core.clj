@@ -335,6 +335,12 @@
 	)
 )
 
+(def Thesaurus
+	(read-string
+		(slurp "resources/ttc/thesaurus.txt")
+	)
+)
+
 
 (defn CreateBigLists [x]
 
@@ -466,6 +472,15 @@
 		)
 	)
 
+	(defn RhymeKey [x]
+		(some-> x
+			FindWordIndex
+			IndexToRhymeKeyword
+			(nth 0)
+			name
+		)
+	)
+
 	;takes the spelling of a word and spits out the pronunciation.  For human use.
 	(defn Pronounce [x]
 		(Pronunciation
@@ -487,6 +502,22 @@
 				(FindWordIndex x)
 			)
 		)
+	)
+
+	(defn Synonyms [x]
+		(map Spelling
+			(get Thesaurus x)
+		)
+	)
+
+	;for web.  takes the spelling of a word and spits out all kinds of info about it.
+	(defn WordInfo [x]
+		{
+			"syllables" (Emphases (FindWordIndex x)),
+			"pronounce" (Pronunciation (FindWordIndex x)),
+			"synonyms" (Synonyms x),
+			"rhymekey" (RhymeKey x)
+		}
 	)
 
 	(defn TextAsPhonemes [x]
@@ -885,6 +916,53 @@
 		}
 	)
 
+  (println "slurping dict.txt...")
+  (def DictVector 
+	(clojure.string/split
+	  (clojure.string/replace							;replace all the 2s with 0s --OPTIONAL
+	    (slurp "resources/dict.txt")
+	  #"2" "0")
+	#"\n"
+	)
+  )
+
+;THESAURUS STUFF
+;USED FOR GENERATING THESAURUS.  NOT IN USE DURING RUN TIME
+;	(def thesaurus1
+;		(map
+;			(fn [v]
+;				(clojure.string/split
+;					v
+;					#","
+;				)
+;			)
+;			(clojure.string/split
+;				(slurp "resources/thes.txt")
+;			#"\n")
+;		)
+;	)
+;
+;	(def thesaurus2
+;		(apply merge
+;			(map
+;				(fn [v]
+;					{
+;						(first v)
+;						(into []
+;							(filter (fn [w] w)
+;								(map FindWordIndexA
+;									(rest v)
+;								)
+;							)
+;						)
+;					}
+;				)
+;				thesaurus1
+;			)
+;		)
+;	)
+
+
 ;ACTUAL PROGRAM STRUCTURE
 
 	(def Scheme "0101010101a0101010101a")
@@ -940,6 +1018,7 @@
 			"pronounce", Pronounce
 			"syllables", Syllables
 			"nextword", GetNextWord
+			"info", WordInfo
 		}
 	)
 
@@ -957,7 +1036,7 @@
 
 		(def word
 			(nth (nth
-				(re-seq #"\/(\w+)"
+				(re-seq #"\/([a-zA-Z']+)"
 					(input :uri)
 				)
 			1) 1)
@@ -982,8 +1061,6 @@
 
 (defn rhyme-server [channel request]
 
-
-
   (enqueue channel
     {:status 200
      :headers {"content-type" "text/plain"
@@ -992,8 +1069,6 @@
      	(DoRequest request)
      	)
      }))
-
-
 
 (def app 
 	(wrap-params rhyme-server))
