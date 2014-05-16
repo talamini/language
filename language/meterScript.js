@@ -37,6 +37,29 @@
             "#17becf"
         ];
 
+        var mostCommonWords = [
+            "the",
+            "be",
+            "to",
+            "of",
+            "and",
+            "a",
+            "in",
+            "that",
+            "have",
+            "I",
+            "it",
+            "for",
+            "not",
+            "on",
+            "with",
+            "he",
+            "as",
+            "you",
+            "do",
+            "at"
+        ];
+
         var rhymeList = [];
 
     	var disyllable = {
@@ -210,6 +233,7 @@
 
         $scope.toAdvanced = function(bubble) {
             bubble.advanced = true;
+            console.info(bubble);
         }
 
         $scope.unAdvanced = function(bubble) {
@@ -470,6 +494,62 @@
 
         }
 
+        $scope.analyzePuns = function() {
+            console.info("button clicked");
+
+            StartGettingPuns();
+        }
+
+        function StartGettingPuns() {
+            var wordsWithoutPuns = $scope.wordBubbles
+            .filter(function(v){
+                return (v.type == "word")
+            })
+            .filter(function(v){
+                return (!v.puns);
+            });
+
+            console.info(wordsWithoutPuns);
+            console.info("length is " + wordsWithoutPuns.length);
+            if (wordsWithoutPuns.length > 0) {
+                console.info("going in again!");
+                wordsWithoutPuns[0].styles["border-color"] = "red";
+                $http({method: 'GET', 
+                    url: 'http://localhost:8008/pun/' + wordsWithoutPuns[0].text,
+                    transformResponse: [function(data){return data;}]
+                    })
+                    .success(function(data, status, headers, config){
+
+                        var isWord = /\w/;
+
+                        var puns = data
+                            .split('\"')
+                            .filter(function(v){
+                                return isWord.test(v);
+                            })
+                            .map(function(v){
+                                return v.split('(')[0].toLowerCase();
+                            });
+
+                        wordsWithoutPuns[0].puns = puns;
+                        wordsWithoutPuns[0].styles["border-color"] = "black";
+
+                        StartGettingPuns();
+
+                    })
+                    .error(function(data, status, headers, config){
+                        console.info("error!");
+                        console.info(data);
+                        console.info(status);
+
+                        wordsWithoutPuns[0].puns = [];
+
+                    });
+            } else {
+                console.info("There are no more words to get puns for");
+            }
+        }
+
 		function StartGettingSyllables() {
 
 			var wordsWithoutSyllables = $scope.wordBubbles.filter(function(v){
@@ -513,6 +593,31 @@
                         } else {
                             pron = null;
                         }
+
+                        /*if (mostCommonWords.indexOf(wordsWithoutSyllables[0].text) > -1) {
+                            wordsWithoutSyllables[0].puns = [];
+                        } else {
+
+                            var punregex = /puns\" \"(.*)\"/;
+
+                            var isWord = /\w/;
+
+                            pun = pun
+                                .split('\"')
+                                .filter(function(v){
+                                    return isWord.test(v);
+                                })
+                                .slice(1)
+                                .map(function(v){
+                                    return v.split('(')[0].toLowerCase();
+                                })
+                                .filter(function(v){
+                                    return (v != wordsWithoutSyllables[0].text);
+                                });
+
+                            wordsWithoutSyllables[0].puns = pun;
+
+                        }*/
 
                         wordsWithoutSyllables[0].pronunciation = pron;
 

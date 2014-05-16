@@ -14,6 +14,9 @@
 				<div ng-if="!!idealAnalysis">{{idealAnalysis}}</div>
 				<div ng-if="!!countingAnalysis">{{countingAnalysis}}</div>
 			</div>
+			<div>
+				<button ng-click="analyzePuns()">Analyze Puns</button>
+			</div>
 
 			<div style="
 				background-color:lightgray
@@ -74,6 +77,7 @@
 									Advanced Menu
 									<div>
 										<input type="text" ng-model="wordBubble.pronunciation">
+										<div>{{wordBubble.puns}}</div>
 										<button ng-click="recalculateRhyme(wordBubble)">Recalculate Rhyme</button>
 									</div>
 									<button ng-click="unAdvanced(wordBubble)">close</button>
