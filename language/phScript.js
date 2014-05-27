@@ -1,3 +1,10 @@
 function PHCtrl($scope, $http) {
-	console.info("hello!");
+
+
+  $scope.buttonClick = function() {
+    console.info($scope.inputWord);
+  }
+
+
+
 }
