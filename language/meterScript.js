@@ -1,5 +1,21 @@
     function MeterCtrl($scope, $http) {
 
+        var infoFromServer = new Bacon.Bus();
+
+        var svg = d3.select("div.forcegraph").append("svg");
+
+        infoFromServer.onValue(function(v){
+            console.info("I'm doing Bacon!  ");
+            console.info(v);
+
+
+
+        });
+
+        var clicks = $('#myButton').asEventStream('click');
+
+        clicks.onValue(function(){alert('clicked!')});
+
     	$scope.wordBubbles = [];
     	$scope.Lines = [];
     	$scope.poetry = false;
@@ -59,6 +75,51 @@
             "do",
             "at"
         ];
+
+        $scope.makeGraph = function() {
+
+            var nodes = $scope.wordBubbles;
+            var links = $scope.wordBubbles
+                .map(function(v, i){
+                    if (i < $scope.wordBubbles.length - 1) {
+                        return {source: i, target: (i + 1)};
+                    }
+                })
+                .filter(function(v){
+                    return !!v;
+                });
+
+            var force = d3.layout.force()
+                .nodes(nodes)
+                .links(links)
+                .size([400, 200])
+                .gravity([0.01])
+                .linkDistance([50])
+                .start();
+
+            var link = svg.selectAll("line")
+                .data(links)
+                .enter().append("line");
+
+            var node = svg.selectAll("text")
+                .data(nodes)
+                .enter().append("text")
+                //.attr("r", 5)
+                .call(force.drag);
+
+            force.on("tick", function() {
+              link.attr("x1", function(d) { return d.source.x; })
+                  .attr("y1", function(d) { return d.source.y; })
+                  .attr("x2", function(d) { return d.target.x; })
+                  .attr("y2", function(d) { return d.target.y; })
+                  .attr("stroke", "black")
+                  .attr("stroke-width", 1);
+
+              node.attr("x", function(d) { return d.x; })
+                  .attr("y", function(d) { return d.y; })
+                  .text(function(d) {return d.text;});
+            });
+        };
 
         var rhymeList = [];
 
@@ -534,6 +595,8 @@
                         wordsWithoutPuns[0].puns = puns;
                         wordsWithoutPuns[0].styles["border-color"] = "black";
 
+                        console.info(puns);
+
                         StartGettingPuns();
 
                     })
@@ -566,8 +629,8 @@
 					transformResponse: [function(data){return data;}]
 					}).
 				    success(function(data, status, headers, config) {
-				    	//console.info("Success!");
-				    	//console.info(data);
+				    	console.info("Success!");
+				    	console.info(data);
 
                         var results = data.match(/[^[\]]+(?=])/g);
 
@@ -575,6 +638,21 @@
                         var pron = results[1];
                         var syn = results[2];
                         var rhy = results[3];
+
+                        var isWord = /\w/;
+
+                        var synonyms = syn
+                            .split('\"')
+                            .filter(function(v){
+                                return isWord.test(v);
+                            })
+                            .map(function(v){
+                                return v.split('(')[0].toLowerCase();
+                            });
+
+                        synonyms.shift();
+
+                        wordsWithoutSyllables[0].synonyms = synonyms;
 
                         var regex = /rhymekey\" \"(.*)\"/;
 
@@ -594,31 +672,6 @@
                             pron = null;
                         }
 
-                        /*if (mostCommonWords.indexOf(wordsWithoutSyllables[0].text) > -1) {
-                            wordsWithoutSyllables[0].puns = [];
-                        } else {
-
-                            var punregex = /puns\" \"(.*)\"/;
-
-                            var isWord = /\w/;
-
-                            pun = pun
-                                .split('\"')
-                                .filter(function(v){
-                                    return isWord.test(v);
-                                })
-                                .slice(1)
-                                .map(function(v){
-                                    return v.split('(')[0].toLowerCase();
-                                })
-                                .filter(function(v){
-                                    return (v != wordsWithoutSyllables[0].text);
-                                });
-
-                            wordsWithoutSyllables[0].puns = pun;
-
-                        }*/
-
                         wordsWithoutSyllables[0].pronunciation = pron;
 
 				    	syll = syll.split('').filter(function(v){return v == '1' || v == '0'});
@@ -633,6 +686,8 @@
 				    	});
 
 				    	wordsWithoutSyllables[0].syllables = syll;
+
+                        infoFromServer.push(wordsWithoutSyllables[0]);
 
 				    	var newWordsWithoutSyllables = $scope.wordBubbles.filter(function(v){
 							return v.syllables == "";
