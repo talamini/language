@@ -1,5 +1,5 @@
 (ns language.core
-	(:require [clojure.string]
+	(:require [clojure.string :as str]
 			  [clojure.math.numeric-tower :as math]
 			  [lamina.core :refer :all]
 			  [aleph.http :refer :all]
@@ -18,8 +18,8 @@
   ;creates a vector called DictVector which has each line in cmudict separately
   (println "slurping dict.txt...")
   (def DictVector 
-	(clojure.string/split
-	  (clojure.string/replace							;replace all the 2s with 0s --OPTIONAL
+	(str/split
+	  (str/replace							;replace all the 2s with 0s --OPTIONAL
 	    (slurp "resources/dict.txt")
 	  #"2" "0")
 	#"\n"
@@ -31,7 +31,7 @@
 	(defn Emphases [x] 
 	  (re-seq #"[0-2]" 
 	    (nth 							;take the second half, not 0 but 1 in the split's output vector
-		  (clojure.string/split 		;split it into two halves a "  "
+		  (str/split 		;split it into two halves a "  "
 		    (nth DictVector x)
 		  #"  ")
 		1)
@@ -41,7 +41,7 @@
 	;returns the way a word is spelled from the DictVector index
 	(defn Spelling [x]
 	  (nth
-	    (clojure.string/split
+	    (str/split
 		  (nth DictVector x)
 		#"  ")
 	  0)
@@ -50,7 +50,7 @@
 	;alternate spelling function that also returns the index of the word, for use in FindWordIndex
 	(defn SpellingA [x]
 		[(nth
-			(clojure.string/split
+			(str/split
 				(nth DictVector x)
 			#"  ")
 		0) x]
@@ -59,7 +59,7 @@
 	;returns the way a word is pronounced from the DictVector index
 	(defn Pronunciation [x]
 	  (nth
-	    (clojure.string/split
+	    (str/split
 		  (nth DictVector x)
 		#"  ")
 	  1)
@@ -86,7 +86,7 @@
 	(defn IndexToEmphasesKeyword [x]
 		[
 			(keyword 									;converts string into keywords
-				(clojure.string/join (Emphases x))		;concatenates vector, outputs string
+				(str/join (Emphases x))		;concatenates vector, outputs string
 			)
 		x]
 	)
@@ -149,7 +149,7 @@
 (defn FindWordIndex [sp]
 	(nth (nth									;the output of all this is like (["GHOST" 47165]), these nths get to the output we want under all those parens'n'stuff
 		(filter
-			(fn [x] (= (clojure.string/upper-case sp) (nth x 0)))				;this function compares sp with the 0 element in the vectors returned by SpellingA, that is to say, the spelling
+			(fn [x] (= (str/upper-case sp) (nth x 0)))				;this function compares sp with the 0 element in the vectors returned by SpellingA, that is to say, the spelling
 			(map SpellingA EveryIndex)			;gives us a list of every spelling	(SpellingA returns a vector where 0 is the spelling and 1 is the index)
 		)
 	0 nil) 1)
@@ -157,12 +157,12 @@
 
 (defn FindWordIndexA [sp]
 	(SpellingToIndex 
-		(keyword (clojure.string/upper-case sp))
+		(keyword (str/upper-case sp))
 	)
 )
 
 	(defn IndexToPronunciationVector [x]
-		(clojure.string/split (Pronunciation x) #" ")
+		(str/split (Pronunciation x) #" ")
 	)
 	
 	;accepts an index number.  Returns a sequence of all the words with the same number of phonemes
@@ -277,8 +277,8 @@
 (println "slurping...")
 ;STUFF FOR FAKING GRAMMAR
 	(defn NaturalEnglish [text]
-		(remove clojure.string/blank?
-			(clojure.string/split
+		(remove str/blank?
+			(str/split
 				(slurp text)
 				#"[^a-zA-Z']"
 			)
